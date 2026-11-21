@@ -108,7 +108,10 @@
       startSession(a.steps, { kind: "actu", id: a.id, title: a.title });
     });
     const reset = $app.querySelector("#reset");
-    if (reset) reset.onclick = () => { if (confirm("Effacer ta progression de démo ?")) { S = JSON.parse(JSON.stringify(DEFAULT)); save(); tab = "path"; render(); } };
+    if (reset) reset.onclick = () => {
+      if (reset.dataset.armed) { S = JSON.parse(JSON.stringify(DEFAULT)); save(); tab = "path"; render(); return; }
+      reset.dataset.armed = "1"; reset.textContent = "Touche encore pour tout effacer";
+    };
   }
 
   function goalCard() {
@@ -242,7 +245,7 @@
       }
 
       root.innerHTML = `${header()}<div class="l-body">${body}</div><div class="l-foot"><button class="btn ${ready ? "" : ""}" id="go" ${ready ? "" : "disabled"}>${s.type === "learn" ? "Continuer" : "Vérifier"}</button></div>`;
-      root.querySelector(".l-close").onclick = () => { if (confirm("Quitter la leçon ? Ta progression sur cette leçon sera perdue.")) close(); };
+      root.querySelector(".l-close").onclick = close;
       const go = root.querySelector("#go");
 
       root.querySelectorAll("[data-opt]").forEach((b) => b.onclick = () => {
