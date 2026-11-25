@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mission du mail qui traîne</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout : une colonne mobile de 480 px max, barre d'étapes collante en haut, action principale en bas de chaque écran. */
+:root {
+  --bg: #F4F1EA;
+  --surface: #FFFFFF;
+  --sunk: #E9E4D8;
+  --fg: #22262E;
+  --fg-2: #5A6170;
+  --brand: #1F3A5F;
+  --on-brand: #FFFFFF;
+  --link: #A84F12;
+  --line: #D9D3C6;
+  --field: #7A808C;
+  --mark: #FBE7D3;
+  --ok: #2E6B3F;
+  --ok-soft: #E3EFE5;
+  --focus: #1F3A5F;
+  --title: "Archivo", "Arial Narrow", Arial, sans-serif;
+  --text: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14181F; --surface: #1B2029; --sunk: #232935; --fg: #F4F1EA; --fg-2: #9AA3B5;
+    --brand: #7FA6D9; --on-brand: #14181F; --link: #E89A5A; --line: #2E3542; --field: #8A93A5;
+    --mark: #3A2A1C; --ok: #8FCB9B; --ok-soft: #1F3326; --focus: #F2C230; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14181F; --surface: #1B2029; --sunk: #232935; --fg: #F4F1EA; --fg-2: #9AA3B5;
+  --brand: #7FA6D9; --on-brand: #14181F; --link: #E89A5A; --line: #2E3542; --field: #8A93A5;
+  --mark: #3A2A1C; --ok: #8FCB9B; --ok-soft: #1F3326; --focus: #F2C230; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--text); font-size: 17.5px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 40px;
+}
+.app { max-width: 480px; margin: 0 auto; }
+h1, h2 { font-family: var(--title); font-weight: 700; line-height: 1.2; margin: 0; text-wrap: balance; }
+h1 { font-size: 1.6rem; } h2 { font-size: 1.35rem; }
+p { margin: 0; }
+.muted { color: var(--fg-2); }
+.small { font-size: .92rem; }
+.label { font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--fg-2); }
+
+/* Barre d'étapes */
+.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  padding-block: 12px 10px; display: grid; gap: 8px; border-bottom: 1px solid var(--line);
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+.phases { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.phase { font-size: .8rem; font-weight: 700; color: var(--fg-2); display: grid; gap: 4px; }
+.phase i { display: block; height: 6px; border-radius: 3px; background: var(--sunk); }
+.phase.on { color: var(--brand); } .phase.on i { background: var(--brand); }
+.phase.done i { background: var(--brand); opacity: .45; }
+.toprow { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+
+main { display: grid; gap: 18px; padding-top: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 10px; }
+.mail { border-left: 4px solid var(--brand); }
+.tag { display: inline-block; font-size: .8rem; font-weight: 700; color: var(--brand); border: 1.5px solid var(--brand); border-radius: 999px; padding: 2px 10px; }
+.sim { font-size: .82rem; color: var(--fg-2); font-style: italic; }
+
+button, .btn {
+  font: 700 1rem var(--text); min-height: 48px; border-radius: 12px; padding: 12px 18px; cursor: pointer;
+  border: 2px solid var(--brand); background: var(--brand); color: var(--on-brand); text-decoration: none;
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+}
+button.ghost, .btn.ghost { background: transparent; color: var(--brand); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.sent:disabled { opacity: 1; cursor: default; }
+button:focus-visible, .btn:focus-visible, textarea:focus-visible, input:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.actions { display: grid; gap: 10px; }
+.link { color: var(--link); font-weight: 700; background: none; border: 0; padding: 0; min-height: auto; text-decoration: underline; justify-content: flex-start; }
+
+/* Choix */
+.choices { display: grid; gap: 10px; }
+.choice {
+  background: var(--surface); color: var(--fg); border: 2px solid var(--line); text-align: left; justify-content: flex-start;
+  font-weight: 400; line-height: 1.4;
+}
+.choice[aria-pressed="true"] { border-color: var(--brand); box-shadow: inset 0 0 0 1px var(--brand); }
+.choice.good { border-color: var(--ok); background: var(--ok-soft); }
+.feedback { border-left: 3px solid var(--link); padding: 4px 0 4px 12px; display: grid; gap: 4px; }
+.feedback b { color: var(--link); }
+
+/* Repérer dans un texte */
+.answer { display: grid; gap: 6px; }
+.sent {
+  background: transparent; color: var(--fg); border: 1.5px solid transparent; border-radius: 10px;
+  font-weight: 400; text-align: left; justify-content: flex-start; padding: 10px 12px; min-height: 48px; line-height: 1.45;
+  border-bottom-color: var(--line);
+}
+.sent[aria-pressed="true"] { background: var(--mark); border-color: var(--link); }
+.sent.hint { outline: 2px dashed var(--link); outline-offset: -2px; }
+.sent.found { background: var(--mark); border-color: var(--link); }
+.sent.missed { border: 2px dashed var(--link); }
+.sent.wrongpick { opacity: .7; }
+.note { margin: 2px 0 6px 12px; border-left: 3px solid var(--link); padding-left: 10px; font-size: .93rem; color: var(--fg); }
+.note b { color: var(--link); }
+
+/* Onglets avant / après */
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.tab { min-height: 44px; background: var(--surface); color: var(--brand); }
+.tab[aria-selected="true"] { background: var(--brand); color: var(--on-brand); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 8px; }
+.prompt { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88rem; background: var(--sunk); border-radius: 8px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Champs */
+.field { display: grid; gap: 6px; }
+.field > label, .field > .flabel { font-weight: 700; }
+textarea, input[type=text] {
+  font: inherit; color: var(--fg); background: var(--surface); border: 1.5px solid var(--field); border-radius: 10px;
+  padding: 10px 12px; width: 100%; min-height: 48px;
+}
+textarea { min-height: 88px; resize: vertical; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { min-height: 40px; padding: 8px 14px; border-radius: 999px; background: var(--surface); color: var(--fg); border: 1.5px solid var(--field); font-weight: 400; }
+.chip[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); border-color: var(--brand); font-weight: 700; }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.toast { font-weight: 700; color: var(--ok); }
+.checks { display: grid; gap: 10px; }
+.check { display: flex; gap: 12px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px; cursor: pointer; }
+.check input { width: 24px; height: 24px; margin: 2px 0 0; accent-color: var(--brand); flex: none; }
+.assistants { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistants a { font-size: .95rem; padding: 8px 12px; min-height: 44px; }
+
+/* Carnet */
+.piece { border-left: 4px solid var(--brand); }
+.seal { width: 44px; height: 44px; flex: none; }
+.row { display: flex; gap: 12px; align-items: center; }
+.foot { margin-top: 28px; font-size: .82rem; color: var(--fg-2); text-align: center; }
+@media (prefers-reduced-motion: no-preference) { main { animation: in .25s ease-out; } @keyframes in { from { opacity: .4; transform: translateY(6px); } to { opacity: 1; transform: none; } } }
+</style>
+
+<div class="app">
+  <header class="top" aria-label="Progression">
+    <div class="toprow"><span class="label" id="steplabel">Mission du jour</span><span class="small muted" id="timeleft">5 min</span></div>
+    <div class="phases" aria-hidden="true">
+      <div class="phase" data-ph="0"><i></i>Jouer</div>
+      <div class="phase" data-ph="1"><i></i>Faire</div>
+      <div class="phase" data-ph="2"><i></i>Garder</div>
+    </div>
+  </header>
+  <main id="screen" aria-live="polite"></main>
+  <p class="foot">Prototype de démonstration · contenu et nom provisoires · aucune donnée n'est envoyée.</p>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const $ = (s, r = document) => r.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+  const SENTENCES = [
+    { t: "Bonjour Karim,", err: false },
+    { t: "Merci pour ton message, je comprends l'importance du comité.", err: false },
+    { t: "Je t'envoie l'ensemble des chiffres du trimestre jeudi, sans faute.", err: true, why: "Tu n'as que le premier semestre. L'IA a promis la totalité parce que tu ne lui as pas dit ce que tu pouvais envoyer." },
+    { t: "Je joindrai également une analyse détaillée des écarts.", err: true, why: "Personne n'a demandé d'analyse. L'IA ajoute souvent un « bonus » pour paraître serviable : c'est un engagement en plus." },
+    { t: "N'hésite pas à revenir vers moi si besoin.", err: false },
+    { t: "Je te rappelle demain matin pour faire le point.", err: true, why: "Un rendez-vous que tu n'as jamais proposé. Si tu envoies ça, Karim attendra ton appel." },
+    { t: "Bonne journée,", err: false }
+  ];
+  const GOOD_REPLY = "Bonjour Karim,\nMerci pour ta relance. Je peux t'envoyer jeudi les chiffres du premier semestre, qui sont consolidés. Ceux du second semestre arrivent la semaine prochaine : je te les transmets dès réception.\nSi le comité a besoin d'une tendance d'ici là, je peux proposer une estimation, en précisant qu'elle est provisoire.\nBonne journée,";
+
+  const S = { step: 0, guess: null, picked: new Set(), checked: false, wrongTaps: 0, fix: null, tab: "avant",
+    mode: "entrainement", decision: "", rel: "manager", ton: "cordial", copied: false, checks: [false, false, false],
+    result: "", intention: "Quand je reçois un mail délicat, je commence par écrire ce que je veux répondre, puis je relis chaque engagement.",
+    feel: null, tomorrow: null };
+
+  const STEPS = [
+    { label: "Mission du jour", ph: -1, t: "5 min", render: intro },
+    { label: "Jouer · la situation", ph: 0, t: "≈ 4 min 40", render: situation },
+    { label: "Jouer · devine", ph: 0, t: "≈ 4 min 15", render: guess },
+    { label: "Jouer · repère", ph: 0, t: "≈ 3 min 45", render: spot },
+    { label: "Jouer · répare", ph: 0, t: "≈ 2 min 45", render: repair },
+    { label: "Faire · à toi", ph: 1, t: "≈ 2 min 15", render: doIt },
+    { label: "Garder · vérifie", ph: 2, t: "≈ 45 s", render: keep },
+    { label: "Pour conclure", ph: 2, t: "≈ 15 s", render: conclude },
+    { label: "Ton Carnet", ph: 3, t: "Terminé", render: carnet }
+  ];
+
+  function go(n) {
+    S.step = n; draw(); window.scrollTo({ top: 0 });
+    const h = $("#screen").querySelector("h1, h2"); if (h) { h.setAttribute("tabindex", "-1"); h.focus({ preventScroll: true }); }
+  }
+  function draw() {
+    const st = STEPS[S.step];
+    $("#steplabel").textContent = st.label;
+    $("#timeleft").textContent = st.t;
+    document.querySelectorAll(".phase").forEach(p => {
+      const i = +p.dataset.ph;
+      p.classList.toggle("on", i === st.ph);
+      p.classList.toggle("done", i < st.ph);
+    });
+    const m = $("#screen");
+    m.innerHTML = "";
+    st.render(m);
+  }
+  const el = (html) => { const d = document.createElement("div"); d.innerHTML = html.trim(); return d.firstElementChild; };
+
+  function intro(m) {
+    m.append(el(`<div class="card"><span class="tag">Écrire au travail</span>
+      <h1>Le mail qui traîne</h1>
+      <p>Il y a ce mail auquel tu dois répondre depuis des jours. Aujourd'hui, on le règle, et tu repars avec une méthode pour tous les mails délicats.</p>
+      <p class="small muted">5 minutes · 3 temps : jouer, faire, garder. Tu peux t'arrêter et reprendre plus tard.</p></div>`));
+    const b = el(`<div class="actions"><button>Commencer</button></div>`); b.firstChild.onclick = () => go(1); m.append(b);
+  }
+
+  function situation(m) {
+    m.append(el(`<h2>La situation</h2>`));
+    m.append(el(`<div class="card mail"><span class="small muted">De : Karim (ton manager) · il y a 3 jours</span>
+      <p><b>Objet : Chiffres pour le comité</b></p>
+      <p>Salut, tu peux m'envoyer les chiffres du trimestre pour jeudi ? Merci !<br>Karim</p></div>`));
+    m.append(el(`<p>Problème : tu n'as que les chiffres du <b>premier semestre</b>. Le reste arrive la semaine prochaine. Alors tu repousses.</p>`));
+    const b = el(`<div class="actions"><button>Voir ce que ferait l'IA</button></div>`); b.firstChild.onclick = () => go(2); m.append(b);
+  }
+
+  function guess(m) {
+    m.append(el(`<h2>Devine</h2>`));
+    m.append(el(`<p>Si tu colles ce mail dans une IA en écrivant seulement « Réponds à ce mail », que fait-elle le plus souvent&nbsp;?</p>`));
+    const opts = [
+      ["q", "Elle te pose des questions avant d'écrire"],
+      ["p", "Elle accepte tout et promet les chiffres pour jeudi"],
+      ["r", "Elle refuse poliment à ta place"]
+    ];
+    const box = el(`<div class="choices" role="group" aria-label="Ton pronostic"></div>`);
+    opts.forEach(([k, txt]) => {
+      const b = el(`<button class="choice" aria-pressed="${S.guess === k}">${esc(txt)}</button>`);
+      b.onclick = () => { S.guess = k; draw(); };
+      box.append(b);
+    });
+    m.append(box);
+    if (S.guess) {
+      m.append(el(`<div class="feedback"><b>${S.guess === "p" ? "Bien vu." : "Pas de mauvaise réponse ici."}</b>
+        <span>Le plus souvent, elle promet tout. L'IA écrit très bien, mais elle ne sait pas ce que <i>tu</i> veux répondre. Alors elle devine, et elle devine souvent « oui, avec plaisir ».</span></div>`));
+      const b = el(`<div class="actions"><button>Voir sa réponse</button></div>`); b.firstChild.onclick = () => go(3); m.append(b);
+    }
+  }
+
+  function spot(m) {
+    m.append(el(`<h2>Repère les 3 promesses que tu n'as jamais faites</h2>`));
+    m.append(el(`<p class="small muted">Touche les phrases qui t'engagent sans ton accord, puis vérifie. Indice : relis ce que tu peux vraiment envoyer jeudi.</p>`));
+    m.append(el(`<p class="sim">Réponse type, simulée · ce genre d'erreur peut arriver avec n'importe quel assistant</p>`));
+    const box = el(`<div class="answer card" role="group" aria-label="Réponse de l'IA, phrase par phrase"></div>`);
+    SENTENCES.forEach((s, i) => {
+      const picked = S.picked.has(i);
+      let cls = "sent";
+      if (S.checked) { if (s.err && picked) cls += " found"; else if (s.err) cls += " missed"; else if (picked) cls += " wrongpick"; }
+      else if (S.wrongTaps >= 2 && s.err && !picked) cls += " hint";
+      const b = el(`<button class="${cls}" aria-pressed="${picked}" ${S.checked ? "disabled" : ""}>${esc(s.t)}</button>`);
+      b.onclick = () => {
+        if (S.picked.has(i)) S.picked.delete(i); else { S.picked.add(i); if (!s.err) S.wrongTaps++; }
+        draw();
+      };
+      box.append(b);
+      if (S.checked && s.err) box.append(el(`<p class="note"><b>${picked ? "Trouvé." : "Celle-ci t'a échappé."}</b> ${esc(s.why)}</p>`));
+      if (S.checked && !s.err && picked) box.append(el(`<p class="note">Cette phrase ne t'engage à rien : tu peux la garder.</p>`));
+    });
+    m.append(box);
+    if (!S.checked) {
+      const b = el(`<div class="actions"><button ${S.picked.size ? "" : "disabled"}>Vérifier</button></div>`);
+      b.firstChild.onclick = () => { S.checked = true; draw(); };
+      m.append(b);
+    } else {
+      const found = SENTENCES.filter((s, i) => s.err && S.picked.has(i)).length;
+      m.append(el(`<div class="feedback"><b>${found} sur 3 repérées.</b><span>À retenir : l'IA « arrange » la situation. Elle ajoute des dates, des promesses ou des bonus que tu n'as pas demandés. Relis chaque engagement comme si tu le signais.</span></div>`));
+      const b = el(`<div class="actions"><button>Réparer la demande</button></div>`); b.firstChild.onclick = () => go(4); m.append(b);
+    }
+  }
+
+  function repair(m) {
+    m.append(el(`<h2>Qu'est-ce qui manquait à la demande&nbsp;?</h2>`));
+    const opts = [["ton", "Le ton souhaité"], ["dec", "Ta décision : ce que tu veux vraiment répondre"], ["long", "La longueur du mail"], ["pol", "Une formule de politesse"]];
+    const box = el(`<div class="choices" role="group" aria-label="L'ingrédient manquant"></div>`);
+    opts.forEach(([k, txt]) => {
+      const cls = "choice" + (S.fix && k === "dec" ? " good" : "");
+      const b = el(`<button class="${cls}" aria-pressed="${S.fix === k}">${esc(txt)}</button>`);
+      b.onclick = () => { S.fix = k; draw(); };
+      box.append(b);
+    });
+    m.append(box);
+    if (S.fix) {
+      m.append(el(`<div class="feedback"><b>${S.fix === "dec" ? "Exactement." : "Utile, mais ce n'est pas le plus important."}</b>
+        <span>L'ingrédient décisif, c'est <b>ta décision</b>. Tu fais le fond, l'IA fait la forme. Le ton et la longueur viennent ensuite.</span></div>`));
+      const tabs = el(`<div class="tabs" role="tablist" aria-label="Avant et après">
+        <button class="tab" role="tab" aria-selected="${S.tab === "avant"}" data-t="avant">Avant</button>
+        <button class="tab" role="tab" aria-selected="${S.tab === "apres"}" data-t="apres">Après</button></div>`);
+      tabs.querySelectorAll("button").forEach(b => b.onclick = () => { S.tab = b.dataset.t; draw(); });
+      m.append(tabs);
+      m.append(S.tab === "avant"
+        ? el(`<div class="panel" role="tabpanel"><span class="label">Demande</span><div class="prompt">Réponds à ce mail.</div><span class="label">Résultat</span><p>Tout le trimestre promis pour jeudi, une analyse en bonus et un appel demain matin.</p></div>`)
+        : el(`<div class="panel" role="tabpanel"><span class="label">Demande</span><div class="prompt">Ce que je veux répondre : seulement le premier semestre jeudi, le reste la semaine prochaine. C'est mon manager, ton cordial. N'ajoute aucun engagement.</div><span class="label">Résultat</span><p style="white-space:pre-line">${esc(GOOD_REPLY)}</p></div>`));
+      const b = el(`<div class="actions"><button>À toi de jouer</button></div>`); b.firstChild.onclick = () => go(5); m.append(b);
+    }
+  }
+
+  function buildPrompt() {
+    const mail = S.mode === "entrainement"
+      ? "Voici le mail que j'ai reçu : « Salut, tu peux m'envoyer les chiffres du trimestre pour jeudi ? Merci ! Karim »"
+      : "Voici le mail que j'ai reçu : [colle ici le mail, sans noms ni informations sensibles]";
+    const dec = S.decision.trim() || "[ce que tu veux répondre, en une ou deux phrases]";
+    return `Tu es mon assistant pour rédiger des mails professionnels.\n${mail}\nCe que je veux répondre : ${dec}\nMa relation avec la personne : ${S.rel}.\nTon souhaité : ${S.ton}.\nÉcris une réponse de 8 lignes maximum. N'ajoute aucun engagement que je n'ai pas mentionné. Si quelque chose n'est pas clair, pose-moi une question avant d'écrire.`;
+  }
+
+  function doIt(m) {
+    m.append(el(`<h2>À toi : prépare ta demande</h2>`));
+    const seg = el(`<div class="seg" role="group" aria-label="Sur quel mail ?">
+      <button class="chip" aria-pressed="${S.mode === "vrai"}" data-m="vrai">Mon vrai mail</button>
+      <button class="chip" aria-pressed="${S.mode === "entrainement"}" data-m="entrainement">M'entraîner avec Karim</button></div>`);
+    seg.querySelectorAll("button").forEach(b => b.onclick = () => { S.mode = b.dataset.m; draw(); });
+    m.append(seg);
+    if (S.mode === "vrai") m.append(el(`<p class="small muted">Avant de coller ton mail, remplace les noms et les montants. Exemple : « Mme Durand » devient « [Cliente] », « 12 400 € » devient « [montant] ». Et suis la règle de ton entreprise sur les outils d'IA.</p>`));
+    else m.append(el(`<p class="small muted">Mode entraînement : tu t'exerces sur le mail de Karim. Pratique si ton entreprise n'autorise pas l'IA.</p>`));
+
+    const f1 = el(`<div class="field"><label for="dec">Ce que tu veux répondre (même mal dit)</label>
+      <textarea id="dec" placeholder="Ex. : seulement le premier semestre jeudi, le reste la semaine prochaine"></textarea>
+      <div class="chips" aria-label="Exemples à toucher"></div></div>`);
+    const ta = f1.querySelector("textarea"); ta.value = S.decision;
+    ta.oninput = () => { S.decision = ta.value; $("#preview").textContent = buildPrompt(); };
+    ["Oui, mais pas avant le 15", "Seulement une partie pour jeudi", "Non, je propose autre chose"].forEach(x => {
+      const c = el(`<button class="chip" aria-pressed="false">${esc(x)}</button>`);
+      c.onclick = () => { S.decision = x; ta.value = x; $("#preview").textContent = buildPrompt(); };
+      f1.querySelector(".chips").append(c);
+    });
+    m.append(f1);
+    const chipField = (label, key, opts) => {
+      const f = el(`<div class="field"><span class="flabel">${label}</span><div class="chips" role="group" aria-label="${label}"></div></div>`);
+      opts.forEach(o => {
+        const c = el(`<button class="chip" aria-pressed="${S[key] === o}">${esc(o)}</button>`);
+        c.onclick = () => { S[key] = o; draw(); };
+        f.querySelector(".chips").append(c);
+      });
+      return f;
+    };
+    m.append(chipField("Ta relation avec la personne", "rel", ["collègue", "manager", "client", "fournisseur"]));
+    m.append(chipField("Le ton", "ton", ["cordial", "ferme mais poli", "chaleureux"]));
+    m.append(el(`<div class="field"><span class="flabel">Ta demande, prête à copier</span><div class="prompt" id="preview"></div></div>`));
+    $("#preview", m).textContent = buildPrompt();
+
+    const acts = el(`<div class="actions"><button id="copy">Copier ma demande</button><span class="toast" id="toast" role="status"></span></div>`);
+    acts.querySelector("#copy").onclick = async () => {
+      const txt = buildPrompt();
+      try { await navigator.clipboard.writeText(txt); $("#toast").textContent = "Demande copiée. Colle-la dans ton assistant."; }
+      catch (e) {
+        const r = document.createRange(); r.selectNodeContents($("#preview")); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+        $("#toast").textContent = "Copie automatique impossible : le texte est sélectionné, copie-le à la main.";
+      }
+      S.copied = true; $("#next").disabled = false;
+    };
+    m.append(acts);
+    m.append(el(`<div class="field"><span class="flabel">Ouvrir ton assistant</span><div class="assistants">
+      <a class="btn ghost" href="https://chatgpt.com" target="_blank" rel="noopener">ChatGPT</a>
+      <a class="btn ghost" href="https://copilot.microsoft.com" target="_blank" rel="noopener">Copilot</a>
+      <a class="btn ghost" href="https://claude.ai" target="_blank" rel="noopener">Claude</a>
+      <a class="btn ghost" href="https://gemini.google.com" target="_blank" rel="noopener">Gemini</a>
+      <a class="btn ghost" href="https://chat.mistral.ai" target="_blank" rel="noopener">Le Chat</a></div>
+      <p class="small muted">Utilise l'outil autorisé dans ton entreprise.</p></div>`));
+    const pc = el(`<div class="actions"><button class="ghost" id="pc">Continuer sur ordinateur</button><p class="small muted" id="pcmsg" role="status"></p></div>`);
+    pc.querySelector("#pc").onclick = () => { $("#pcmsg").textContent = "Dans l'app, tu recevras un lien par email qui reprend ici, sur ton ordinateur. (Démo : rien n'est envoyé.)"; };
+    m.append(pc);
+    const nx = el(`<div class="actions"><button id="next" ${S.copied ? "" : "disabled"}>J'ai ma réponse, je vérifie</button>
+      <button class="link" id="skip">Je le ferai plus tard au bureau</button></div>`);
+    nx.querySelector("#next").onclick = () => go(6);
+    nx.querySelector("#skip").onclick = () => { S.copied = true; go(6); };
+    m.append(nx);
+  }
+
+  function keep(m) {
+    m.append(el(`<h2>Vérifie avant d'envoyer</h2>`));
+    const f = el(`<div class="field"><label for="res">Colle la réponse de l'IA (facultatif)</label>
+      <textarea id="res" placeholder="Pour la retrouver dans ton Carnet"></textarea></div>`);
+    const ta = f.querySelector("textarea"); ta.value = S.result; ta.oninput = () => { S.result = ta.value; };
+    m.append(f);
+    const items = ["Chaque date et chaque engagement viennent de moi", "Le ton me ressemble, sans excuses en trop", "Je remets les vrais noms dans ma messagerie, pas dans l'IA"];
+    const box = el(`<div class="checks"></div>`);
+    items.forEach((t, i) => {
+      const c = el(`<label class="check"><input type="checkbox" ${S.checks[i] ? "checked" : ""}><span>${esc(t)}</span></label>`);
+      c.querySelector("input").onchange = e => { S.checks[i] = e.target.checked; $("#keep").disabled = !S.checks.every(Boolean); };
+      box.append(c);
+    });
+    m.append(box);
+    const b = el(`<div class="actions"><button id="keep" ${S.checks.every(Boolean) ? "" : "disabled"}>Garder dans mon Carnet</button></div>`);
+    b.firstChild.onclick = () => go(7);
+    m.append(b);
+  }
+
+  function conclude(m) {
+    m.append(el(`<div class="card"><span class="label">Ce que tu as appris</span>
+      <p><b>Tu décides du fond, l'IA s'occupe de la forme.</b> Et tu relis chaque engagement avant d'envoyer.</p></div>`));
+    const f = el(`<div class="field"><label for="int">Ton réflexe pour la prochaine fois</label><textarea id="int"></textarea>
+      <p class="small muted">On te le rappellera dans 3 jours.</p></div>`);
+    const ta = f.querySelector("textarea"); ta.value = S.intention; ta.oninput = () => { S.intention = ta.value; };
+    m.append(f);
+    const feel = el(`<div class="field"><span class="flabel">Ça t'a été utile&nbsp;?</span><div class="chips" role="group" aria-label="Utilité"></div></div>`);
+    ["oui", "un peu", "non"].forEach(o => { const c = el(`<button class="chip" aria-pressed="${S.feel === o}">${o}</button>`); c.onclick = () => { S.feel = o; draw(); }; feel.querySelector(".chips").append(c); });
+    m.append(feel);
+    const tm = el(`<div class="field"><span class="flabel">Demain, tu préfères…</span><div class="choices" role="group" aria-label="Mission de demain"></div></div>`);
+    [["cr", "Transformer tes notes de réunion en compte rendu"], ["non", "Dire non sans froisser"]].forEach(([k, t]) => {
+      const c = el(`<button class="choice" aria-pressed="${S.tomorrow === k}">${esc(t)}</button>`); c.onclick = () => { S.tomorrow = k; draw(); }; tm.querySelector(".choices").append(c);
+    });
+    m.append(tm);
+    const b = el(`<div class="actions"><button>Terminer</button></div>`); b.firstChild.onclick = () => go(8); m.append(b);
+  }
+
+  function carnet(m) {
+    const today = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+    m.append(el(`<div class="row"><svg class="seal" viewBox="0 0 44 44" aria-hidden="true"><rect x="3" y="14" width="38" height="16" rx="8" fill="none" stroke="currentColor" stroke-width="2.5" style="color:var(--brand)"/><circle cx="22" cy="22" r="4.5" fill="currentColor" style="color:var(--link)"/><line x1="16" y1="14" x2="16" y2="30" stroke="currentColor" stroke-width="1.5" style="color:var(--brand)"/><line x1="28" y1="14" x2="28" y2="30" stroke="currentColor" stroke-width="1.5" style="color:var(--brand)"/></svg><h1>Ton Carnet</h1></div>`));
+    const p = el(`<div class="card piece"><span class="small muted">${esc(today)} · Écrire au travail</span><h2>Le mail qui traîne</h2>
+      <span class="label">Ta demande réutilisable</span><div class="prompt" id="reuse"></div>
+      <button class="ghost" id="recopy">Réutiliser cette demande</button><span class="toast" id="t2" role="status"></span>
+      <span class="label">Ton réflexe</span><p>${esc(S.intention)}</p>
+      ${S.result.trim() ? `<span class="label">Ta réponse gardée</span><p style="white-space:pre-line">${esc(S.result.trim())}</p>` : ""}</div>`);
+    m.append(p);
+    $("#reuse", m).textContent = buildPrompt();
+    $("#recopy", m).onclick = async () => { try { await navigator.clipboard.writeText(buildPrompt()); $("#t2").textContent = "Demande copiée."; } catch (e) { $("#t2").textContent = "Sélectionne le texte pour le copier."; } };
+    const next = S.tomorrow === "non" ? "Dire non sans froisser" : "Transformer tes notes de réunion en compte rendu";
+    m.append(el(`<div class="card"><span class="label">Demain</span><p>${esc(next)}. Un seul rappel, à l'heure que tu as choisie. Et demain matin, une question : « Ton mail est parti&nbsp;? »</p></div>`));
+    const b = el(`<div class="actions"><button class="ghost">Rejouer la démo</button></div>`);
+    b.firstChild.onclick = () => { Object.assign(S, { guess: null, picked: new Set(), checked: false, wrongTaps: 0, fix: null, tab: "avant", copied: false, checks: [false, false, false], feel: null, tomorrow: null }); go(0); };
+    m.append(b);
+  }
+
+  draw();
+})();
+</script>
+
+</html>
