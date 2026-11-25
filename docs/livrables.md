@@ -27,6 +27,7 @@ Dernière mise à jour : 24 novembre 2026. Document de cadrage complet : https:/
 
 ## À faire avant le 1er janvier
 - [ ] Parcours de l'inscription à J+30 (séquence d'attente, mission 0, cas limites, FAQ)
+- [x] Format des missions (`format-missions.md`)
 - [ ] Stock : 10 missions + 8 d'avance, kit nouveauté, kit retour testeurs
 - [ ] Missions 3 à 10 et mission « nouveauté »
 - [ ] App de la bêta (connexion par lien email, missions, Carnet, rappels, envoi par mail)
